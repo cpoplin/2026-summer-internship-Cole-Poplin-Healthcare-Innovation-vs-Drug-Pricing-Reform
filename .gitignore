@@ -1,1 +1,11 @@
 *.env
+
+GEMINI.md
+
+description.md
+
+.venv
+
+.vscode
+
+example_project
