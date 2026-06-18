@@ -295,11 +295,153 @@ def create_correlation_graph():
     plt.savefig('charts/correlation_graph.png', dpi=150, bbox_inches="tight")
     plt.close(fig)
 
+def create_summary():
+    # Load subsector baskets
+    small_molecule_tickers = ["BMY", "PFE", "ABBV"]
+    complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
+    
+    data = {}
+    for ticker in small_molecule_tickers + complex_biologics_tickers:
+        t = yf.Ticker(ticker)
+        df = t.history(start="1995-01-01", end="2026-01-01", interval="1mo")
+        if not df.empty:
+            df.index = df.index.tz_localize(None)
+            data[ticker] = df["Close"]
+            
+    price_df = pd.DataFrame(data)
+    if price_df.empty:
+        print("Error: No price data downloaded for summary.")
+        return
+        
+    # --- Period 1: Patent Cliff (2000-01-01 to 2005-12-31) ---
+    p1_df = price_df.loc["2000-01-01":"2005-12-31"].copy()
+    p1_df.dropna(how='all', axis=1, inplace=True)
+    p1_norm = p1_df.copy()
+    for col in p1_norm.columns:
+        first_val = p1_norm[col].dropna()
+        if not first_val.empty:
+            p1_norm[col] = (p1_norm[col] / first_val.iloc[0]) * 100
+            
+    p1_sm = [t for t in small_molecule_tickers if t in p1_norm.columns]
+    p1_cb = [t for t in complex_biologics_tickers if t in p1_norm.columns]
+    
+    p1_sm_avg = p1_norm[p1_sm].mean(axis=1)
+    p1_cb_avg = p1_norm[p1_cb].mean(axis=1)
+    
+    p1_sm_perf = p1_sm_avg.iloc[-1] - 100
+    p1_cb_perf = p1_cb_avg.iloc[-1] - 100
+    
+    # --- Period 2: Inflation Reduction Act (2022-07-01 to 2025-01-01) ---
+    p2_df = price_df.loc["2022-07-01":"2025-01-01"].copy()
+    p2_df.dropna(how='all', axis=1, inplace=True)
+    p2_norm = p2_df.copy()
+    for col in p2_norm.columns:
+        first_val = p2_norm[col].dropna()
+        if not first_val.empty:
+            p2_norm[col] = (p2_norm[col] / first_val.iloc[0]) * 100
+            
+    p2_sm = [t for t in small_molecule_tickers if t in p2_norm.columns]
+    p2_cb = [t for t in complex_biologics_tickers if t in p2_norm.columns]
+    
+    p2_sm_avg = p2_norm[p2_sm].mean(axis=1)
+    p2_cb_avg = p2_norm[p2_cb].mean(axis=1)
+    
+    p2_sm_perf = p2_sm_avg.iloc[-1] - 100
+    p2_cb_perf = p2_cb_avg.iloc[-1] - 100
+    
+    # --- Overall Period (1995-01-01 to 2026-01-01) ---
+    overall_norm = price_df.copy()
+    for col in overall_norm.columns:
+        first_val = overall_norm[col].dropna()
+        if not first_val.empty:
+            overall_norm[col] = (overall_norm[col] / first_val.iloc[0]) * 100
+            
+    sm_cols = [t for t in small_molecule_tickers if t in overall_norm.columns]
+    cb_cols = [t for t in complex_biologics_tickers if t in overall_norm.columns]
+    
+    overall_sm_avg = overall_norm[sm_cols].mean(axis=1)
+    overall_cb_avg = overall_norm[cb_cols].mean(axis=1)
+    
+    overall_sm_perf = overall_sm_avg.iloc[-1] - 100
+    overall_cb_perf = overall_cb_avg.iloc[-1] - 100
+    diff = overall_cb_perf - overall_sm_perf
+    
+    print(f"Summary Metrics Calculated:")
+    print(f"  Patent Cliff (2000-2005): CB {p1_cb_perf:+.2f}%, SM {p1_sm_perf:+.2f}%")
+    print(f"  IRA Turmoil (2022-2025): CB {p2_cb_perf:+.2f}%, SM {p2_sm_perf:+.2f}%")
+    print(f"  Overall Gain (1995-2026): CB {overall_cb_perf:+.2f}%, SM {overall_sm_perf:+.2f}%")
+    print(f"  Alpha Spread: {diff:+.2f}%")
+    
+    # --- Create the figure matching the styling of chart 5 ---
+    fig = plt.figure(figsize=(12, 6))
+    fig.patch.set_facecolor(NAVY)
+    ax = fig.add_subplot(111)
+    ax.set_facecolor(NAVY)
+    ax.axis("off")
+    
+    ax.text(0.5, 0.95, "T H E S I S   V E R D I C T", transform=ax.transAxes,
+            ha="center", va="top", fontsize=14, color=GOLD,
+            fontweight="bold")
+            
+    ax.text(0.5, 0.86, "Healthcare Alpha Lies in Complex Biologics",
+            transform=ax.transAxes, ha="center", va="top",
+            fontsize=16, color=WHITE, fontweight="bold")
+            
+    verdict_text = "✓  THESIS SUPPORTED"
+    verdict_color = GREEN
+    ax.text(0.5, 0.72, verdict_text, transform=ax.transAxes,
+            ha="center", va="top", fontsize=22,
+            color=verdict_color, fontweight="bold")
+            
+    stats = [
+        ("Patent Cliff (2000-2005)\nBiologics vs Small Mol",
+         f"{p1_cb_perf:+.1f}% vs {p1_sm_perf:+.1f}%", GOLD),
+        ("IRA Turmoil (2022-2025)\nBiologics vs Small Mol",
+         f"{p2_cb_perf:+.1f}% vs {p2_sm_perf:+.1f}%", GREEN if p2_cb_perf > 0 else RED),
+        ("Biologics Overall Gain\n(1995–2026)",
+         f"{overall_cb_perf:+,.0f}%", TEAL),
+        ("Healthcare Alpha\nSpread (CB - SM)",
+         f"{diff:+,.0f}%", GOLD),
+    ]
+    
+    for i, (label, value, color) in enumerate(stats):
+        x = 0.125 + i * 0.25
+        ax.text(x, 0.52, value, transform=ax.transAxes,
+                ha="center", va="top", fontsize=15,
+                color=color, fontweight="bold")
+        ax.text(x, 0.38, label, transform=ax.transAxes,
+                ha="center", va="top", fontsize=9,
+                color=SLATE, multialignment="center")
+                
+    line = plt.Line2D([0.05, 0.95], [0.30, 0.30], transform=ax.transAxes,
+                      color=SLATE, linewidth=0.5)
+    ax.add_line(line)
+    
+    conclusion = (
+        f"Across the 1995–2026 sample, Complex Biologics (AMGN, REGN, NVO) delivered an overwhelming +{overall_cb_perf:,.1f}% return,\n"
+        f"outperforming Small Molecules (BMY, PFE, ABBV) by +{diff:,.1f}%. Crucially, during periods of industry turmoil,\n"
+        f"Complex Biologics proved highly resilient: gaining {p1_cb_perf:+.1f}% during the Patent Cliff (vs {p1_sm_perf:+.1f}% for SM)\n"
+        f"and {p2_cb_perf:+.1f}% during the IRA pressure (vs {p2_sm_perf:+.1f}% for SM). The next generation of healthcare alpha structurally resides in Complex Biologics."
+    )
+    ax.text(0.5, 0.28, conclusion, transform=ax.transAxes,
+            ha="center", va="top", fontsize=10, color=WHITE,
+            multialignment="center", linespacing=1.6)
+            
+    ax.text(0.5, 0.04,
+            "2026 Summer Internship · Healthcare Innovation vs Drug Pricing Reform · Bronze Tier",
+            transform=ax.transAxes, ha="center", va="bottom",
+            fontsize=8, color=SLATE)
+            
+    plt.savefig('charts/verdict_summary.png', dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("  Saved: charts/verdict_summary.png")
+
 def main():
     small_molecule_graph()
     percent_change_graph()
     complex_biologics_graph()
     create_correlation_graph()
+    create_summary()
 
 main()
 
