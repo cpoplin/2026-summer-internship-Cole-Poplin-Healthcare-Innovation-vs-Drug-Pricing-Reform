@@ -26,15 +26,10 @@ navy_opaque = (0.05, 0.10, 0.25, 0.95)
 #     #highlight the IRA
 #     plt.axvspan(pd.to_datetime('2022-07-01'), pd.to_datetime('2025-01-01'), 
                 # color='red', alpha=0.2, label='The Inflation Reduction Act')
-def small_molecule_graph():
-    bms = yf.Ticker("BMY")
-    bms_monthly_data = bms.history(start="1995-01-01", end="2026-01-01", interval="1mo")
-
-    pfizer = yf.Ticker("PFE")
-    pfizer_monthly_data = pfizer.history(start="1995-01-01", end='2026-01-01', interval="1mo")
-
-    abbvie = yf.Ticker("ABBV")
-    abbvie_monthly_data = abbvie.history(start="1995-01-01", end="2026-01-01", interval="1mo")
+def small_molecule_graph(data):
+    bms_monthly_data = data["BMY"]
+    pfizer_monthly_data = data["PFE"]
+    abbvie_monthly_data = data["ABBV"]
 
 
     #print(jj_monthly_data.head())
@@ -72,14 +67,15 @@ def small_molecule_graph():
     #plt.show()
 
 
-def get_subsector_pct_change(tickers):
+def get_subsector_pct_change(tickers, data):
     pct_changes = {}
     for ticker in tickers:
-        t = yf.Ticker(ticker)
-        df = t.history(start="1995-01-01", end="2026-01-01", interval="1mo")
-        if not df.empty:
-            df.index = df.index.tz_localize(None)
-            jan_data = df[df.index.month == 1].copy()
+        df = data.get(ticker)
+        if df is not None and not df.empty:
+            df_copy = df.copy()
+            if df_copy.index.tz is not None:
+                df_copy.index = df_copy.index.tz_localize(None)
+            jan_data = df_copy[df_copy.index.month == 1].copy()
             jan_data["Percent_change"] = jan_data["Close"].pct_change() * 100
             jan_data.index = jan_data.index.strftime('%Y')
             pct_changes[ticker] = jan_data["Percent_change"]
@@ -92,13 +88,13 @@ def get_subsector_pct_change(tickers):
     clean_df = clean_df.dropna(subset=['Percent_change']).reset_index(drop=True)
     return clean_df
 
-def percent_change_graph():
+def percent_change_graph(data):
     # Load subsector baskets
     small_molecule_tickers = ["BMY", "PFE", "ABBV"]
     complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
     
-    sm_clean = get_subsector_pct_change(small_molecule_tickers)
-    cb_clean = get_subsector_pct_change(complex_biologics_tickers)
+    sm_clean = get_subsector_pct_change(small_molecule_tickers, data)
+    cb_clean = get_subsector_pct_change(complex_biologics_tickers, data)
 
     # Create figure and 2 side-by-side subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), facecolor=NAVY)
@@ -166,15 +162,10 @@ def percent_change_graph():
     plt.savefig('charts/percent_change_bar.png', dpi=150, bbox_inches="tight")
     #plt.show()
 
-def complex_biologics_graph():
-    amgen = yf.Ticker("AMGN")
-    amgen_monthly_data = amgen.history(start="1995-01-01", end="2026-01-01", interval="1mo")
-
-    regeneron = yf.Ticker("REGN")
-    rgn_monthly_data = regeneron.history(start="1995-01-01", end='2026-01-01', interval="1mo")
-
-    novo_nordisk = yf.Ticker("NVO")
-    nn_monthly_data = novo_nordisk.history(start="1995-01-01", end="2026-01-01", interval="1mo")
+def complex_biologics_graph(data):
+    amgen_monthly_data = data["AMGN"]
+    rgn_monthly_data = data["REGN"]
+    nn_monthly_data = data["NVO"]
 
 
     #print(jj_monthly_data.head())
@@ -211,22 +202,27 @@ def complex_biologics_graph():
     plt.savefig('charts/complex_biologics.png', dpi=150, bbox_inches="tight")
     # plt.show() 
 
-def create_correlation_graph():
+def create_correlation_graph(data_dict):
     tickers = ["BMY", "PFE", "ABBV", "AMGN", "REGN", "NVO"]
     
     data = {}
     for ticker in tickers:
-        t = yf.Ticker(ticker)
-        df = t.history(start="2000-01-01", end="2026-01-01", interval="1mo")
-        if not df.empty:
-            data[ticker] = df["Close"]
+        df = data_dict.get(ticker)
+        if df is not None and not df.empty:
+            df_copy = df.copy()
+            if df_copy.index.tz is not None:
+                df_copy.index = df_copy.index.tz_localize(None)
+            sliced_df = df_copy.loc["2000-01-01":"2026-01-01"]
+            if not sliced_df.empty:
+                data[ticker] = sliced_df["Close"]
             
     price_df = pd.DataFrame(data)
     if price_df.empty:
         print("Error: No price data downloaded.")
         return
         
-    price_df.index = price_df.index.tz_localize(None)
+    if price_df.index.tz is not None:
+        price_df.index = price_df.index.tz_localize(None)
     
     # Period 1: Patent Cliff (2000-01-01 to 2005-12-31)
     p1_df = price_df.loc["2000-01-01":"2005-12-31"].copy()
@@ -295,18 +291,19 @@ def create_correlation_graph():
     plt.savefig('charts/correlation_graph.png', dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-def create_summary():
+def create_summary(data_dict):
     # Load subsector baskets
     small_molecule_tickers = ["BMY", "PFE", "ABBV"]
     complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
     
     data = {}
     for ticker in small_molecule_tickers + complex_biologics_tickers:
-        t = yf.Ticker(ticker)
-        df = t.history(start="1995-01-01", end="2026-01-01", interval="1mo")
-        if not df.empty:
-            df.index = df.index.tz_localize(None)
-            data[ticker] = df["Close"]
+        df = data_dict.get(ticker)
+        if df is not None and not df.empty:
+            df_copy = df.copy()
+            if df_copy.index.tz is not None:
+                df_copy.index = df_copy.index.tz_localize(None)
+            data[ticker] = df_copy["Close"]
             
     price_df = pd.DataFrame(data)
     if price_df.empty:
@@ -437,13 +434,25 @@ def create_summary():
     print("  Saved: charts/verdict_summary.png")
 
 def main():
-    small_molecule_graph()
-    percent_change_graph()
-    complex_biologics_graph()
-    create_correlation_graph()
-    create_summary()
+    # Load subsector baskets
+    small_molecule_tickers = ["BMY", "PFE", "ABBV"]
+    complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
+    all_tickers = small_molecule_tickers + complex_biologics_tickers
+    
+    data = {}
+    for ticker in all_tickers:
+        t = yf.Ticker(ticker)
+        df = t.history(start="1995-01-01", end="2026-01-01", interval="1mo")
+        data[ticker] = df
+        
+    small_molecule_graph(data)
+    percent_change_graph(data)
+    complex_biologics_graph(data)
+    create_correlation_graph(data)
+    create_summary(data)
 
-main()
+if __name__ == "__main__":
+    main()
 
 
 # #I assume I want something that shows percentage change
