@@ -239,7 +239,8 @@ def create_correlation_graph(data_dict):
     
     p1_small_avg = p1_norm[p1_small].mean(axis=1)
     p1_complex_avg = p1_norm[p1_complex].mean(axis=1)
-    p1_corr = p1_small_avg.corr(p1_complex_avg)
+    p1_sm_perf = p1_small_avg.iloc[-1] - 100
+    p1_cb_perf = p1_complex_avg.iloc[-1] - 100
     
     # Period 2: Inflation Reduction Act (2022-07-01 to 2025-01-01)
     p2_df = price_df.loc["2022-07-01":"2025-01-01"].copy()
@@ -256,7 +257,8 @@ def create_correlation_graph(data_dict):
     
     p2_small_avg = p2_norm[p2_small].mean(axis=1)
     p2_complex_avg = p2_norm[p2_complex].mean(axis=1)
-    p2_corr = p2_small_avg.corr(p2_complex_avg)
+    p2_sm_perf = p2_small_avg.iloc[-1] - 100
+    p2_cb_perf = p2_complex_avg.iloc[-1] - 100
     
     # Create the figure
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6), facecolor=NAVY)
@@ -267,7 +269,7 @@ def create_correlation_graph(data_dict):
     ax1.grid(axis='y', linestyle='-', alpha=1.0, color=SLATE)
     ax1.set_axisbelow(True)
     ax1.legend(loc='upper left', framealpha=0.8, fontsize=9)
-    ax1.set_title(f"The 'Patent Cliff' (2000–2005)\nCorrelation: {p1_corr:+.2f}", fontsize=11, fontweight='bold', pad=15, color='white')
+    ax1.set_title(f"The 'Patent Cliff' (2000–2005)\nSmall Molecules: {p1_sm_perf:+.1f}% | Complex Biologics: {p1_cb_perf:+.1f}%", fontsize=11, fontweight='bold', pad=15, color='white')
     ax1.tick_params(axis='both', colors='white', labelsize=10)
     ax1.set_facecolor(navy_opaque)
     ax1.set_xlabel("Date", color='white', fontsize=11)
@@ -279,19 +281,20 @@ def create_correlation_graph(data_dict):
     ax2.grid(axis='y', linestyle='-', alpha=1.0, color=SLATE)
     ax2.set_axisbelow(True)
     ax2.legend(loc='upper left', framealpha=0.8, fontsize=9)
-    ax2.set_title(f"The Inflation Reduction Act (2022–2025)\nCorrelation: {p2_corr:+.2f}", fontsize=11, fontweight='bold', pad=15, color='white')
+    ax2.set_title(f"The Inflation Reduction Act (2022–2025)\nSmall Molecules: {p2_sm_perf:+.1f}% | Complex Biologics: {p2_cb_perf:+.1f}%", fontsize=11, fontweight='bold', pad=15, color='white')
     ax2.tick_params(axis='both', colors='white', labelsize=10)
     ax2.set_facecolor(navy_opaque)
     ax2.set_xlabel("Date", color='white', fontsize=11)
     ax2.set_ylabel("Normalized Price Index (Start = 100)", color='white', fontsize=11)
     
-    fig.suptitle("Subsector Correlation & Average Movement During Turmoil", fontsize=14, fontweight='bold', color='white')
+    fig.suptitle("Subsector Comparison & Average Movement During Turmoil", fontsize=14, fontweight='bold', color='white')
     fig.autofmt_xdate()
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.savefig('charts/correlation_graph.png', dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 def create_summary(data_dict):
+    import matplotlib.patches as patches
     # Load subsector baskets
     small_molecule_tickers = ["BMY", "PFE", "ABBV"]
     complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
@@ -369,65 +372,153 @@ def create_summary(data_dict):
     print(f"  Overall Gain (1995-2026): CB {overall_cb_perf:+.2f}%, SM {overall_sm_perf:+.2f}%")
     print(f"  Alpha Spread: {diff:+.2f}%")
     
-    # --- Create the figure matching the styling of chart 5 ---
-    fig = plt.figure(figsize=(12, 6))
-    fig.patch.set_facecolor(NAVY)
+    # --- Design Layout Configuration ---
+    BG_BLUE = "#0A1128"       # Dark deep blue background
+    CARD_BG = "#132237"       # Lighter navy for the content cards
+    CARD_BORDER = "#1E2F5B"   # Border for cards
+    ACCENT_AMBER = "#D48C46"  # Premium bronze/copper/amber (replaces old gold)
+    TEXT_MUTED = "#8E9AAF"    # Muted slate/grey
+    
+    fig = plt.figure(figsize=(12, 6.5))
+    fig.patch.set_facecolor(BG_BLUE)
     ax = fig.add_subplot(111)
-    ax.set_facecolor(NAVY)
+    ax.set_facecolor(BG_BLUE)
     ax.axis("off")
     
-    ax.text(0.5, 0.95, "T H E S I S   V E R D I C T", transform=ax.transAxes,
-            ha="center", va="top", fontsize=14, color=GOLD,
-            fontweight="bold")
+    # Left-aligned dashboard header
+    ax.text(0.05, 0.94, "C A S E   S T U D Y   V E R D I C T   •   B R O N Z E   T I E R", 
+            transform=ax.transAxes, ha="left", va="top", fontsize=8.5, 
+            fontweight="bold", color=ACCENT_AMBER)
             
-    ax.text(0.5, 0.86, "Healthcare Alpha Lies in Complex Biologics",
-            transform=ax.transAxes, ha="center", va="top",
+    ax.text(0.05, 0.88, "Healthcare Innovation vs. Drug Pricing Reform", 
+            transform=ax.transAxes, ha="left", va="top", 
             fontsize=16, color=WHITE, fontweight="bold")
             
-    verdict_text = "✓  THESIS SUPPORTED"
-    verdict_color = GREEN
-    ax.text(0.5, 0.72, verdict_text, transform=ax.transAxes,
-            ha="center", va="top", fontsize=22,
-            color=verdict_color, fontweight="bold")
+    ax.text(0.05, 0.82, "Long-term performance analysis of Complex Biologics vs. Small Molecule subsectors", 
+            transform=ax.transAxes, ha="left", va="top", 
+            fontsize=10, color=TEXT_MUTED)
             
-    stats = [
-        ("Patent Cliff (2000-2005)\nBiologics vs Small Mol",
-         f"{p1_cb_perf:+.1f}% vs {p1_sm_perf:+.1f}%", GOLD),
-        ("IRA Turmoil (2022-2025)\nBiologics vs Small Mol",
-         f"{p2_cb_perf:+.1f}% vs {p2_sm_perf:+.1f}%", GREEN if p2_cb_perf > 0 else RED),
-        ("Biologics Overall Gain\n(1995–2026)",
-         f"{overall_cb_perf:+,.0f}%", TEAL),
-        ("Healthcare Alpha\nSpread (CB - SM)",
-         f"{diff:+,.0f}%", GOLD),
+    # Horizontal Divider Line below header
+    header_divider = plt.Line2D([0.05, 0.95], [0.77, 0.77], transform=ax.transAxes,
+                                 color=CARD_BORDER, linewidth=1.0, alpha=0.8)
+    ax.add_line(header_divider)
+    
+    # --- Left Column: Vertical Metric Cards ---
+    card_w = 0.42
+    card_h = 0.11
+    # Positions: y_bottom for 4 cards
+    y_positions = [0.60, 0.45, 0.30, 0.15]
+    
+    val_multiple = (100.0 + overall_cb_perf) / (100.0 + overall_sm_perf)
+    
+    stats_data = [
+        {
+            "val": f"+{overall_cb_perf:,.0f}%",
+            "val_color": ACCENT_AMBER,
+            "title": "Complex Biologics Gain",
+            "subtitle": f"1995–2026 | vs +{overall_sm_perf:,.0f}% for Small Molecules"
+        },
+        {
+            "val": f"{val_multiple:.1f}x",
+            "val_color": ACCENT_AMBER,
+            "title": "Healthcare Alpha Spread",
+            "subtitle": f"Biologic stock value grew {val_multiple:.1f}x as compared to \nSmall Molecules"
+        },
+        {
+            "val": f"{p1_cb_perf:+.1f}%",
+            "val_color": GREEN,
+            "title": "Patent Cliff (2000–2005)",
+            "subtitle": f"Biologics gained vs {p1_sm_perf:+.1f}% for Small Molecules"
+        },
+        {
+            "val": f"{p2_cb_perf:+.1f}%",
+            "val_color": GREEN,
+            "title": "IRA Turmoil (2022–2025)",
+            "subtitle": f"Biologics gained vs {p2_sm_perf:+.1f}% for Small Molecules"
+        }
     ]
     
-    for i, (label, value, color) in enumerate(stats):
-        x = 0.125 + i * 0.25
-        ax.text(x, 0.52, value, transform=ax.transAxes,
-                ha="center", va="top", fontsize=15,
-                color=color, fontweight="bold")
-        ax.text(x, 0.38, label, transform=ax.transAxes,
-                ha="center", va="top", fontsize=9,
-                color=SLATE, multialignment="center")
+    for y_bottom, card in zip(y_positions, stats_data):
+        # Draw rounded card container
+        card_rect = patches.FancyBboxPatch((0.05, y_bottom), card_w, card_h,
+                                           transform=ax.transAxes,
+                                           facecolor=CARD_BG, edgecolor=CARD_BORDER,
+                                           linewidth=1.0, boxstyle="round,pad=0.0,rounding_size=0.015")
+        ax.add_patch(card_rect)
+        
+        # Center the value on the left side of the card
+        ax.text(0.115, y_bottom + 0.055, card["val"], transform=ax.transAxes,
+                ha="center", va="center", fontsize=13.0,
+                fontweight="bold", color=card["val_color"])
                 
-    line = plt.Line2D([0.05, 0.95], [0.30, 0.30], transform=ax.transAxes,
-                      color=SLATE, linewidth=0.5)
-    ax.add_line(line)
+        # Draw vertical separator line inside the card
+        sep_line = plt.Line2D([0.18, 0.18], [y_bottom + 0.02, y_bottom + 0.09],
+                              transform=ax.transAxes, color=CARD_BORDER, linewidth=0.8)
+        ax.add_line(sep_line)
+        
+        # Left-align the description labels on the right side of the card
+        ax.text(0.20, y_bottom + 0.07, card["title"], transform=ax.transAxes,
+                ha="left", va="center", fontsize=9.5,
+                fontweight="bold", color=WHITE)
+        ax.text(0.20, y_bottom + 0.035, card["subtitle"], transform=ax.transAxes,
+                ha="left", va="center", fontsize=6.0,
+                color=TEXT_MUTED)
+                
+    # --- Right Column: Verdict Summary Card ---
+    verdict_rect = patches.FancyBboxPatch((0.52, 0.15), 0.43, 0.56,
+                                         transform=ax.transAxes,
+                                         facecolor=CARD_BG, edgecolor=CARD_BORDER,
+                                         linewidth=1.0, boxstyle="round,pad=0.0,rounding_size=0.015")
+    ax.add_patch(verdict_rect)
     
-    conclusion = (
-        f"Across the 1995–2026 sample, Complex Biologics (AMGN, REGN, NVO) delivered an overwhelming +{overall_cb_perf:,.1f}% return,\n"
-        f"outperforming Small Molecules (BMY, PFE, ABBV) by +{diff:,.1f}%. Crucially, during periods of industry turmoil,\n"
-        f"Complex Biologics proved highly resilient: gaining {p1_cb_perf:+.1f}% during the Patent Cliff (vs {p1_sm_perf:+.1f}% for SM)\n"
-        f"and {p2_cb_perf:+.1f}% during the IRA pressure (vs {p2_sm_perf:+.1f}% for SM). The next generation of healthcare alpha structurally resides in Complex Biologics."
-    )
-    ax.text(0.5, 0.28, conclusion, transform=ax.transAxes,
-            ha="center", va="top", fontsize=10, color=WHITE,
-            multialignment="center", linespacing=1.6)
+    # Verdict tag header
+    ax.text(0.735, 0.66, "EVALUATION VERDICT", transform=ax.transAxes,
+            ha="center", va="center", fontsize=8.5, fontweight="bold", color=TEXT_MUTED)
             
-    ax.text(0.5, 0.04,
-            "2026 Summer Internship · Healthcare Innovation vs Drug Pricing Reform · Bronze Tier",
-            transform=ax.transAxes, ha="center", va="bottom",
-            fontsize=8, color=SLATE)
+    # Badge background
+    is_supported = overall_cb_perf > overall_sm_perf
+    badge_bg = "#1E3A2F" if is_supported else "#3A1E1E"
+    badge_fg = GREEN if is_supported else RED
+    verdict_lbl = "✓  THESIS SUPPORTED" if is_supported else "✗  THESIS NOT SUPPORTED"
+    
+    badge_rect = patches.FancyBboxPatch((0.58, 0.58), 0.31, 0.055,
+                                        transform=ax.transAxes,
+                                        facecolor=badge_bg, edgecolor=badge_fg,
+                                        linewidth=1.0, boxstyle="round,pad=0.0,rounding_size=0.01")
+    ax.add_patch(badge_rect)
+    
+    ax.text(0.735, 0.607, verdict_lbl, transform=ax.transAxes,
+            ha="center", va="center", fontsize=10, fontweight="bold", color=badge_fg)
+            
+    # Verdict divider line
+    verdict_divider = plt.Line2D([0.55, 0.92], [0.54, 0.54], transform=ax.transAxes,
+                                 color=CARD_BORDER, linewidth=0.8)
+    ax.add_line(verdict_divider)
+    
+    # Narrative Header & Body
+    ax.text(0.735, 0.505, "Executive Summary", transform=ax.transAxes,
+            ha="center", va="center", fontsize=10.5, fontweight="bold", color=WHITE)
+            
+    conclusion = (
+        f"Across the 1995–2026 sample, Complex Biologics (AMGN, REGN,\n"
+        f"NVO) delivered an overwhelming +{overall_cb_perf:,.1f}% return,\n"
+        f"outperforming Small Molecules (BMY, PFE, ABBV) by +{diff:,.1f}%.\n\n"
+        f"Crucially, during periods of turmoil where small molecules crashed, \ncomplex biologics"
+        f" remained unaffected or even reacted positively:\n"
+        f"• Gained {p1_cb_perf:+.1f}% during the Patent Cliff (vs {p1_sm_perf:+.1f}% for SM)\n"
+        f"• Gained {p2_cb_perf:+.1f}% during the IRA pressure (vs {p2_sm_perf:+.1f}% for SM)\n\n"
+        f"The next generation of healthcare alpha structurally resides\n"
+        f"in Complex Biologics."
+    )
+    ax.text(0.55, 0.46, conclusion, transform=ax.transAxes,
+            ha="left", va="top", fontsize=7.5, color=WHITE,
+            linespacing=1.3)
+            
+    # Footer
+    ax.text(0.5, 0.06,
+            "2026 Summer Internship  •  Healthcare Innovation vs Drug Pricing Reform  •  Bronze Tier",
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=8, fontweight="bold", color=TEXT_MUTED)
             
     plt.savefig('charts/verdict_summary.png', dpi=150, bbox_inches="tight")
     plt.close(fig)
