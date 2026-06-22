@@ -61,7 +61,7 @@ Pure sub-sector data is not directly available via the `yfinance` API. To overco
 *   Highlights two critical regulatory/market turmoil windows:
     *   **The Patent Cliff (2000–2005)**: Initiated by the Hatch-Waxman Act, triggering heavy pressures on small-molecule traditional drugs.
     *   **The Inflation Reduction Act (2022–2025)**: Price-capping drug pricing reform pressures.
-*   Normalizes prices to a base of 100 at the start of each turmoil window to compare relative performance.
+*   Normalizes prices to a base of 100 at the start of each turmoil window to compare relative performance (seen in correlation_graph).
 *   Generates 5 publication-quality charts under `./charts/`.
 *   Computes overall returns and the alpha spread between Complex Biologics and Small Molecules.
 
