@@ -47,7 +47,7 @@ python bronze.py
 
 ## Data Strategy & Sub-Sector Basket Approach
 
-Pure sub-sector data is not directly available via the `yfinance` API. To overcome this challenge, sub-sector performance is extrapolated by tracking baskets of representative target companies (accounting for the fact that large pharma is inherently diversified):
+Pure sub-sector data is not directly available via the `yfinance` API (or any other public API for that matter). To overcome this challenge, sub-sector performance is extrapolated by tracking baskets of representative target companies (though notably large pharma is inherently diversified):
 
 *   **Small Molecules (Traditional Pharma)**: Bristol-Myers Squibb (`BMY`), Pfizer (`PFE`), AbbVie (`ABBV`).
 *   **Complex Biologics (Innovation Leaders)**: Amgen (`AMGN`), Regeneron (`REGN`), Novo Nordisk (`NVO`).
