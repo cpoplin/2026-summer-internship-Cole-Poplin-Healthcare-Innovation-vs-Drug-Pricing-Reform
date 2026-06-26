@@ -524,6 +524,189 @@ def create_summary(data_dict):
     plt.close(fig)
     print("  Saved: charts/verdict_summary.png")
 
+def medicare_negot_event():
+    # Load subsector baskets
+    small_molecule_tickers = ["BMY", "PFE", "ABBV"]
+    complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
+    tickers = small_molecule_tickers + complex_biologics_tickers
+    
+    print("Downloading daily data for Medicare Negotiation Event...")
+    df = yf.download(tickers, start="2023-08-01", end="2023-10-01", group_by='ticker', progress=False)
+
+    close_data = {}
+    for ticker in tickers:
+        if ticker in df.columns.levels[0]:
+            close_series = df[ticker]["Close"].copy()
+            if close_series.index.tz is not None:
+                close_series.index = close_series.index.tz_localize(None)
+            close_data[ticker] = close_series
+
+    df_prices = pd.DataFrame(close_data)
+
+    # Event window: August 14, 2023 to September 22, 2023
+    start_date = "2023-08-14"
+    end_date = "2023-09-22"
+    df_prices = df_prices.loc[start_date:end_date]
+
+    # Normalize to Monday, Aug 28, 2023 (the day before the selection announcement)
+    base_date = "2023-08-28"
+    if base_date in df_prices.index:
+        base_row = df_prices.loc[base_date]
+    else:
+        base_row = df_prices.loc[:"2023-08-28"].iloc[-1]
+        base_date = base_row.name
+
+    normalized = df_prices.copy()
+    for col in normalized.columns:
+        normalized[col] = (normalized[col] / base_row[col]) * 100
+
+    normalized["Small Molecules Avg"] = normalized[small_molecule_tickers].mean(axis=1)
+    normalized["Complex Biologics Avg"] = normalized[complex_biologics_tickers].mean(axis=1)
+
+    # Calculate post-event daily volatility (standard deviation of daily returns) from Aug 29 to Sep 22
+    daily_returns = df_prices.pct_change()
+    post_event_returns = daily_returns.loc["2023-08-29":end_date]
+
+    sm_vol = post_event_returns[small_molecule_tickers].mean(axis=1).std() * 100
+    cb_vol = post_event_returns[complex_biologics_tickers].mean(axis=1).std() * 100
+
+    # Plotting using consistent visual styling
+    fig, ax = plt.subplots(figsize=(12, 6.5), facecolor=NAVY)
+    ax.set_facecolor(navy_opaque)
+
+    # Plot individual stocks as thin dashed lines
+    # for t in small_molecule_tickers:
+    #     ax.plot(normalized.index, normalized[t], color=TEAL, alpha=0.3, linestyle="--", label=f"{t} (Indiv)")
+    # for t in complex_biologics_tickers:
+    #     ax.plot(normalized.index, normalized[t], color=GOLD, alpha=0.3, linestyle="--", label=f"{t} (Indiv)")
+
+    # Plot basket averages
+    ax.plot(normalized.index, normalized["Small Molecules Avg"], color=TEAL, linewidth=3, label="Small Molecules Avg")
+    ax.plot(normalized.index, normalized["Complex Biologics Avg"], color=GOLD, linewidth=3, label="Complex Biologics Avg")
+
+    # Draw vertical line for the announcement
+    ax.axvline(pd.to_datetime("2023-08-29"), color=RED, linestyle="-", linewidth=2.0, label="CMS Price Negotiation List (Aug 29)")
+    ax.text(pd.to_datetime("2023-08-29"), 105.5, "Announcement Date\nAug 29, 2023", color=RED, fontsize=9.5, fontweight="bold", ha="center")
+
+    # Visual customizations
+    ax.grid(axis='both', linestyle='-', alpha=0.5, color=SLATE)
+    ax.set_axisbelow(True)
+    ax.tick_params(axis='both', colors='white', labelsize=10)
+    ax.set_xlabel("Date", color='white', fontsize=11, labelpad=10)
+    ax.set_ylabel("Price Index (Aug 28 = 100)", color='white', fontsize=11, labelpad=10)
+
+    title_text = "Event Study: Medicare Drug Price Negotiation Announcement (Aug–Sept 2023)\n" \
+                 f"Post-Announcement Volatility (Daily SD of Basket): Small Molecules {sm_vol:.2f}% vs. Complex Biologics {cb_vol:.2f}%"
+    ax.set_title(title_text, fontsize=12, fontweight='bold', pad=15, color='white')
+
+    # De-duplicate legend
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = {}
+    for h, l in zip(handles, labels):
+        if "Indiv" not in l:
+            unique_labels[l] = h
+    ax.legend(unique_labels.values(), unique_labels.keys(), loc='lower left', framealpha=0.8, fontsize=9)
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    
+    os.makedirs('charts', exist_ok=True)
+    plt.savefig('charts/medicare_negot_event.png', dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("  Saved: charts/medicare_negot_event.png")
+
+def patent_cliff_event():
+    # Load subsector baskets for 2000
+    # ABBV is replaced with LLY (Eli Lilly) since ABBV did not exist in 2000
+    small_molecule_tickers = ["LLY", "BMY", "PFE"]
+    complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
+    tickers = small_molecule_tickers + complex_biologics_tickers
+    
+    print("Downloading daily data for Prozac Patent Cliff Event...")
+    df = yf.download(tickers, start="2000-07-01", end="2000-10-01", group_by='ticker', progress=False)
+
+    close_data = {}
+    for ticker in tickers:
+        if ticker in df.columns.levels[0]:
+            close_series = df[ticker]["Close"].copy()
+            if close_series.index.tz is not None:
+                close_series.index = close_series.index.tz_localize(None)
+            close_data[ticker] = close_series
+
+    df_prices = pd.DataFrame(close_data)
+
+    # Event window: July 24, 2000 to September 15, 2000
+    start_date = "2000-07-24"
+    end_date = "2000-09-15"
+    df_prices = df_prices.loc[start_date:end_date]
+
+    # Normalize to Tuesday, Aug 8, 2000 (the day before the court ruling)
+    base_date = "2000-08-08"
+    if base_date in df_prices.index:
+        base_row = df_prices.loc[base_date]
+    else:
+        base_row = df_prices.loc[:"2000-08-08"].iloc[-1]
+        base_date = base_row.name
+
+    normalized = df_prices.copy()
+    for col in normalized.columns:
+        normalized[col] = (normalized[col] / base_row[col]) * 100
+
+    normalized["Small Molecules Avg"] = normalized[small_molecule_tickers].mean(axis=1)
+    normalized["Complex Biologics Avg"] = normalized[complex_biologics_tickers].mean(axis=1)
+
+    # Calculate post-event daily volatility (standard deviation of daily returns) from Aug 9 to Sep 15
+    daily_returns = df_prices.pct_change()
+    post_event_returns = daily_returns.loc["2000-08-09":end_date]
+
+    sm_vol = post_event_returns[small_molecule_tickers].mean(axis=1).std() * 100
+    cb_vol = post_event_returns[complex_biologics_tickers].mean(axis=1).std() * 100
+
+    # Plotting using consistent visual styling
+    fig, ax = plt.subplots(figsize=(12, 6.5), facecolor=NAVY)
+    ax.set_facecolor(navy_opaque)
+
+    # Plot individual stocks as thin dashed lines
+    # for t in small_molecule_tickers:
+    #     ax.plot(normalized.index, normalized[t], color=TEAL, alpha=0.3, linestyle="--", label=f"{t} (Indiv)")
+    # for t in complex_biologics_tickers:
+    #     ax.plot(normalized.index, normalized[t], color=GOLD, alpha=0.3, linestyle="--", label=f"{t} (Indiv)")
+
+    # Plot basket averages
+    ax.plot(normalized.index, normalized["Small Molecules Avg"], color=TEAL, linewidth=3, label="Small Molecules Avg")
+    ax.plot(normalized.index, normalized["Complex Biologics Avg"], color=GOLD, linewidth=3, label="Complex Biologics Avg")
+
+    # Draw vertical line for the announcement
+    ax.axvline(pd.to_datetime("2000-08-09"), color=RED, linestyle="-", linewidth=2.0, label="Eli Lilly Prozac Patent Loss (Aug 9)")
+    ax.text(pd.to_datetime("2000-08-09"), 105.5, "Court Ruling Date\nAug 9, 2000", color=RED, fontsize=9.5, fontweight="bold", ha="center")
+
+    # Visual customizations
+    ax.grid(axis='both', linestyle='-', alpha=0.5, color=SLATE)
+    ax.set_axisbelow(True)
+    ax.tick_params(axis='both', colors='white', labelsize=10)
+    ax.set_xlabel("Date", color='white', fontsize=11, labelpad=10)
+    ax.set_ylabel("Price Index (Aug 8 = 100)", color='white', fontsize=11, labelpad=10)
+
+    title_text = "Event Study: Eli Lilly Prozac Patent Loss Ruling (July–Sept 2000)\n" \
+                 f"Post-Announcement Volatility (Daily SD of Basket): Small Molecules {sm_vol:.2f}% vs. Complex Biologics {cb_vol:.2f}%"
+    ax.set_title(title_text, fontsize=12, fontweight='bold', pad=15, color='white')
+
+    # De-duplicate legend
+    handles, labels = ax.get_legend_handles_labels()
+    unique_labels = {}
+    for h, l in zip(handles, labels):
+        if "Indiv" not in l:
+            unique_labels[l] = h
+    ax.legend(unique_labels.values(), unique_labels.keys(), loc='lower left', framealpha=0.8, fontsize=9)
+
+    fig.autofmt_xdate()
+    plt.tight_layout()
+    
+    os.makedirs('charts', exist_ok=True)
+    plt.savefig('charts/patent_cliff_event.png', dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print("  Saved: charts/patent_cliff_event.png")
+
 def main():
     # Load subsector baskets
     small_molecule_tickers = ["BMY", "PFE", "ABBV"]
@@ -541,6 +724,8 @@ def main():
     complex_biologics_graph(data)
     create_correlation_graph(data)
     create_summary(data)
+    medicare_negot_event()
+    patent_cliff_event()
 
 if __name__ == "__main__":
     main()
