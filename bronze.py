@@ -530,7 +530,7 @@ def medicare_negot_event():
     complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
     tickers = small_molecule_tickers + complex_biologics_tickers
     
-    print("Downloading daily data for Medicare Negotiation Event...")
+    #print("Downloading daily data for Medicare Negotiation Event...")
     df = yf.download(tickers, start="2023-08-01", end="2023-10-01", group_by='ticker', progress=False)
 
     close_data = {}
@@ -563,12 +563,10 @@ def medicare_negot_event():
     normalized["Small Molecules Avg"] = normalized[small_molecule_tickers].mean(axis=1)
     normalized["Complex Biologics Avg"] = normalized[complex_biologics_tickers].mean(axis=1)
 
-    # Calculate post-event daily volatility (standard deviation of daily returns) from Aug 29 to Sep 22
-    daily_returns = df_prices.pct_change()
-    post_event_returns = daily_returns.loc["2023-08-29":end_date]
-
-    sm_vol = post_event_returns[small_molecule_tickers].mean(axis=1).std() * 100
-    cb_vol = post_event_returns[complex_biologics_tickers].mean(axis=1).std() * 100
+    # Calculate post-event performance (net change of the basket price index from base date)
+    #since they both started at 100, we can subtract 100 to get the total performance as a percent
+    sm_perf = normalized["Small Molecules Avg"].iloc[-1] - 100
+    cb_perf = normalized["Complex Biologics Avg"].iloc[-1] - 100
 
     # Plotting using consistent visual styling
     fig, ax = plt.subplots(figsize=(12, 6.5), facecolor=NAVY)
@@ -596,7 +594,7 @@ def medicare_negot_event():
     ax.set_ylabel("Price Index (Aug 28 = 100)", color='white', fontsize=11, labelpad=10)
 
     title_text = "Event Study: Medicare Drug Price Negotiation Announcement (Aug–Sept 2023)\n" \
-                 f"Post-Announcement Volatility (Daily SD of Basket): Small Molecules {sm_vol:.2f}% vs. Complex Biologics {cb_vol:.2f}%"
+                 f"Post-Announcement Performance: Small Molecules {sm_perf:+.2f}% vs. Complex Biologics {cb_perf:+.2f}%"
     ax.set_title(title_text, fontsize=12, fontweight='bold', pad=15, color='white')
 
     # De-duplicate legend
@@ -613,7 +611,7 @@ def medicare_negot_event():
     os.makedirs('charts', exist_ok=True)
     plt.savefig('charts/medicare_negot_event.png', dpi=150, bbox_inches="tight")
     plt.close(fig)
-    print("  Saved: charts/medicare_negot_event.png")
+    #print("  Saved: charts/medicare_negot_event.png")
 
 def patent_cliff_event():
     # Load subsector baskets for 2000
@@ -655,12 +653,9 @@ def patent_cliff_event():
     normalized["Small Molecules Avg"] = normalized[small_molecule_tickers].mean(axis=1)
     normalized["Complex Biologics Avg"] = normalized[complex_biologics_tickers].mean(axis=1)
 
-    # Calculate post-event daily volatility (standard deviation of daily returns) from Aug 9 to Sep 15
-    daily_returns = df_prices.pct_change()
-    post_event_returns = daily_returns.loc["2000-08-09":end_date]
-
-    sm_vol = post_event_returns[small_molecule_tickers].mean(axis=1).std() * 100
-    cb_vol = post_event_returns[complex_biologics_tickers].mean(axis=1).std() * 100
+    # Calculate post-event performance (net change of the basket price index from base date)
+    sm_perf = normalized["Small Molecules Avg"].iloc[-1] - 100
+    cb_perf = normalized["Complex Biologics Avg"].iloc[-1] - 100
 
     # Plotting using consistent visual styling
     fig, ax = plt.subplots(figsize=(12, 6.5), facecolor=NAVY)
@@ -688,7 +683,7 @@ def patent_cliff_event():
     ax.set_ylabel("Price Index (Aug 8 = 100)", color='white', fontsize=11, labelpad=10)
 
     title_text = "Event Study: Eli Lilly Prozac Patent Loss Ruling (July–Sept 2000)\n" \
-                 f"Post-Announcement Volatility (Daily SD of Basket): Small Molecules {sm_vol:.2f}% vs. Complex Biologics {cb_vol:.2f}%"
+                 f"Post-Announcement Performance: Small Molecules {sm_perf:+.2f}% vs. Complex Biologics {cb_perf:+.2f}%"
     ax.set_title(title_text, fontsize=12, fontweight='bold', pad=15, color='white')
 
     # De-duplicate legend

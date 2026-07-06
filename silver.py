@@ -534,11 +534,9 @@ elif page == "2. Stress-Test Events & Risk":
                 e1_norm["Small Molecules Avg"] = e1_norm[active_sm].mean(axis=1)
                 e1_norm["Complex Biologics Avg"] = e1_norm[active_cb].mean(axis=1)
                 
-                # Daily volatility post event (Aug 9 to Sep 15)
-                e1_returns = e1_sliced.pct_change()
-                post_event_returns = e1_returns.loc["2000-08-09":e1_end]
-                e1_sm_vol = post_event_returns[active_sm].mean(axis=1).std() * 100
-                e1_cb_vol = post_event_returns[active_cb].mean(axis=1).std() * 100
+                # Calculate performance (net change of the basket price index from base date)
+                e1_sm_perf = e1_norm["Small Molecules Avg"].iloc[-1] - 100
+                e1_cb_perf = e1_norm["Complex Biologics Avg"].iloc[-1] - 100
                 
                 # Plot Event 1
                 fig_e1, ax_e1 = plt.subplots(figsize=(7, 4.5), facecolor=BG_BLUE)
@@ -559,10 +557,10 @@ elif page == "2. Stress-Test Events & Risk":
                 st.pyplot(fig_e1, dpi=chart_dpi)
                 plt.close(fig_e1)
                 
-                # Volatility Metrics
+                # Performance Metrics
                 v_col1, v_col2 = st.columns(2)
-                v_col1.metric("Small Molecules Volatility", f"{e1_sm_vol:.2f}%", help="Standard deviation of daily basket returns post-announcement.")
-                v_col2.metric("Complex Biologics Volatility", f"{e1_cb_vol:.2f}%", help="Standard deviation of daily basket returns post-announcement.")
+                v_col1.metric("Small Molecules Performance", f"{e1_sm_perf:+.2f}%", help="Total basket performance over the event window.")
+                v_col2.metric("Complex Biologics Performance", f"{e1_cb_perf:+.2f}%", help="Total basket performance over the event window.")
                 
     # Event 2: Medicare Negotiation (2023)
     with col_e2:
@@ -606,15 +604,13 @@ elif page == "2. Stress-Test Events & Risk":
                 e2_norm["Small Molecules Avg"] = e2_norm[active_sm2].mean(axis=1)
                 e2_norm["Complex Biologics Avg"] = e2_norm[active_cb2].mean(axis=1)
                 
-                # Daily volatility post event (Aug 29 to Sep 22)
-                e2_returns = e2_sliced.pct_change()
-                post_event_returns2 = e2_returns.loc["2023-08-29":e2_end]
-                e2_sm_vol = post_event_returns2[active_sm2].mean(axis=1).std() * 100
-                e2_cb_vol = post_event_returns2[active_cb2].mean(axis=1).std() * 100
+                # Calculate performance (net change of the basket price index from base date)
+                e2_sm_perf = e2_norm["Small Molecules Avg"].iloc[-1] - 100
+                e2_cb_perf = e2_norm["Complex Biologics Avg"].iloc[-1] - 100
                 
                 # Plot Event 2
                 fig_e2, ax_e2 = plt.subplots(figsize=(7, 4.5), facecolor=BG_BLUE)
-                ax_e2.set_facecolor(navy_opaque if 'navy_opaque' in globals() else NAVY)
+                ax_e2.set_facecolor(NAVY)
                 
                 ax_e2.plot(e2_norm.index, e2_norm["Small Molecules Avg"], color=TEAL, linewidth=2.5, label="Small Molecules Avg")
                 ax_e2.plot(e2_norm.index, e2_norm["Complex Biologics Avg"], color=GOLD, linewidth=2.5, label="Complex Biologics Avg")
@@ -631,10 +627,10 @@ elif page == "2. Stress-Test Events & Risk":
                 st.pyplot(fig_e2, dpi=chart_dpi)
                 plt.close(fig_e2)
                 
-                # Volatility Metrics
+                # Performance Metrics
                 v_col3, v_col4 = st.columns(2)
-                v_col3.metric("Small Molecules Volatility", f"{e2_sm_vol:.2f}%", help="Standard deviation of daily basket returns post-announcement.")
-                v_col4.metric("Complex Biologics Volatility", f"{e2_cb_vol:.2f}%", help="Standard deviation of daily basket returns post-announcement.")
+                v_col3.metric("Small Molecules Performance", f"{e2_sm_perf:+.2f}%", help="Total basket performance over the event window.")
+                v_col4.metric("Complex Biologics Performance", f"{e2_cb_perf:+.2f}%", help="Total basket performance over the event window.")
 
     st.markdown("---")
     
