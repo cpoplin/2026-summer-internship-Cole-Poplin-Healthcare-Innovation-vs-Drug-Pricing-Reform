@@ -1,5 +1,6 @@
 # Starting Process
 - Initially, I spent some time doing basic background research to form a foundation by which I could come to a conclusion, I looked into what regulations/acts affected what parts of the industry, what subsectors were affected in which way by these laws, and more. This is also where I formed the conclusion that regulations are pushing healthcare alpha away from small molecules into complex biologics.
+- The first, most foundational decision I made, was whether this data analysis was going to be in Python or R, and given that it is dependent on a web-based financial API, which is a first class citizen to Python, and outside the specialty of R, I decided on making the project Python based
 - Next, I started to think about how I wanted to show this in data, and spent some time exploring different options on specifically subsector data since that is the goal of this topic, initially, I tried to find stocks tied purely to one subsector, but since every meaningfully large pharma company is quite diversified, that doesn't exist, so from there I started to research into specific subsector (think how much a company spent on R&D in a certain subsector vs how much they profited in that sector), and I found out that this data exists, but by API is only available through bloomberg terminal and equivalents, and a 5 figure sum for an api key is out of scope here. Next, I explored a couple more niche APIs that claimed to offer this data for free, like FinancialModellingPrep in `failed_attempts/attempt_4.py` and 5, but none of these truly had the data I needed.  I also explored hard coding some AI almagamated data like shown in `failed_attempts/pharma_profits_data.py` and `failed_attempts/attempt_1.py`, but between the fact that this data can scarcely be linked to good sources and the fact that one of the main ideas of this project by my understanding was to pull data from an API and then transform it and that fits outside of that.  Eventually I had to fall back onto simple yfinance, and basing my subsector data on companies that are most heavily concentrated in those subsectors, while still acknowledging the fact that this is a compromise in accuracy, it is really more of "the least flawed solution" than "the best solution". 
     -If the question arises for some reason, attempt 2 ended up becoming bronze.py
     -Note that the files where I was attempting to use other APIs cannot be ran without fulfilling authorization requirements of those APIs (API keys were of course not included in uploaded files)
@@ -11,10 +12,11 @@
 - Finally for the bronze tier, I added a verdict image ("verdict_summary") summarizing my findings and formally stating my conclusion, and the initial form of the powerpoint presentation.
 
 # Silver tier
-- After all of my data was set up, I created an interactive streamlit ui for the project, which in large part consisted of prompting an AI with my vision of a UI and how it should showcase the data I already had, down to the 3 pages and what each should show. Though I also spent some time refining its output to be more in line with my vision.
+- After all of my data was set up, I had to decide what platform I was going to use for my UI, given that it was a data project already in Python, and did not have strict performance requirements, streamlit was the natural choice. So, I created an interactive streamlit ui for the project, which in large part consisted of prompting an AI with my vision of a UI and how it should showcase the data I already had, down to the 3 pages and what each should show. Though I also spent some time refining its output to be more in line with my vision.
 
 # Gold tier
 - tbd
 
 # Miscellaneous
-- Minor details were edited all throughout to as my vision for the project evolved.
+- Minor details were edited all throughout as my vision for the project evolved.
+## this section may or may not belong in the final version
