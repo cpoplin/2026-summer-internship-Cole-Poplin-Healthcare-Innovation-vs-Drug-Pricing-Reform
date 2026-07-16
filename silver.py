@@ -155,107 +155,15 @@ def load_daily_data(tickers, start_str, end_str):
     except Exception:
         return pd.DataFrame()
 
-# Fallback profile market caps for the 136 tickers in test_6.py
-FALLBACK_PROFILES = {
-    'WST': 23567332884, 'TAK': 49906134958, 'TEVA': 38169915814, 'VRTX': 119100729981, 
-    'ASND': 14499330737, 'JAZZ': 14274043248, 'REGN': 63643900940, 'ALNY': 38671916769, 
-    'RPRX': 23475464385, 'UTHR': 23156178487, 'BBIO': 13486009155, 'ARWR': 11276560678, 
-    'MDGL': 11858678207, 'IONS': 12614887530, 'AXSM': 12684832319, 'SMMT': 11189548772, 
-    'BMRN': 10939874400, 'KRYS': 10016631494, 'CORT': 8590596890, 'HALO': 8223439290, 
-    'PTGX': 7585680793, 'KYMR': 8033276044, 'RYTM': 7208498692, 'SYRE': 5868606631, 
-    'APGE': 8223468565, 'PTCT': 6813480387, 'MIRM': 5433993579, 'LEGN': 5453974496, 
-    'CNTA': 6258059449, 'AMRX': 5259090726, 'CRSP': 5213057640, 'TGTX': 8216087589, 
-    'ORKA': 3186875315, 'TVTX': 5142507370, 'DNTH': 3653751250, 'INDV': 4933405800, 
-    'XENE': 4307376293, 'TNGX': 3576310212, 'KNSA': 4455036992, 'CRNX': 3824308800, 
-    'DNLI': 3942349867, 'EWTX': 4131571200, 'CPRX': 3841532288, 'NAMS': 3622281480, 
-    'ACAD': 3854245456, 'RLAY': 3043535074, 'TLX': 3448750359, 'VKTX': 4006271654, 
-    'BEAM': 3470345292, 'GPCR': 2570927304, 'ARQT': 3296562465, 'GRDN': 2504964162, 
-    'DYN': 3397198508, 'ELVN': 3362713182, 'LGND': 5556584573, 'ADPT': 2806851672, 
-    'DFTX': 4015293506, 'TARS': 2806263540, 'RARE': 2869000245, 'SUPN': 2591043111, 
-    'VERA': 2712675791, 'TRVI': 2510059258, 'NTLA': 1696062100, 'AUPH': 2283971520, 
-    'KLRA': 2820643286, 'MLYS': 1695516543, 'CLDX': 2217733559, 'NKTR': 1311391141, 
-    'AGIO': 2116891602, 'BCRX': 1982446110, 'LKFT': 1910356900, 'STOK': 1955643967, 
-    'VRDN': 1568655745, 'NRIX': 1642766654, 'ANIP': 1874530638, 'RAPP': 1416837531, 
-    'IOVA': 1585588422, 'SNDX': 1731528010, 'SRPT': 1835829391, 'AMLX': 1370274063, 
-    'CAPR': 1342709847, 'SION': 1782986532, 'RXRX': 1409324378, 'URGN': 1705337490, 
-    'AAPG': 1587814343, 'BCAX': 1365652910, 'VIR': 1700011898, 'GLUE': 1326526059, 
-    'MLTX': 1592963554, 'PVLA': 1396816740, 'AVBP': 1563054584, 'MAZE': 1436718673, 
-    'MPLT': 23201170, 'DMRA': 1464258155, 'AVLN': 1417125115, 'COAG': 58173921, 
-    'ZBIO': 919058033, 'XERS': 1235995871, 'SPRY': 1016368887, 'CRVS': 1074540767, 
-    'LXRX': 963461124, 'ETON': 920109305, 'COLL': 1122922297, 'PHAR': 931546388, 
-    'ORIC': 937486097, 'CGEM': 1084610784, 'SPTX': 1002910913, 'PHAT': 869339310, 
-    'JANX': 908666875, 'AMPH': 844582226, 'ODTX': 560280518, 'SANA': 925069074, 
-    'ABUS': 879042810, 'OLMA': 943754485, 'ESPR': 656991552, 'VOR': 103014207, 
-    'AVTX': 204197635, 'VRXA': 421395283, 'ZVRA': 754899623, 'RLMD': 500281969, 
-    'NNNN': 715865472, 'LBRX': 879082767, 'DSGN': 852225410, 'IMMX': 531909108, 
-    'ALLO': 504809648, 'TBPH': 870972554, 'ACRS': 587068520, 'BBOT': 605209171, 
-    'TRAX': 623875772, 'RIGL': 660085757, 'SGP': 652441834, 'CADL': 493108751, 
-    'GYRE': 594783614, 'IRWD': 624706335, 'TECX': 574849751, 'EIKN': 28093368
-}
-
-@st.cache_data(show_spinner="Compiling stock collapse statistics...")
-def load_collapse_statistics():
-    """Fetch and calculate collapses from yfinance for 136 tickers."""
-    tickers = list(FALLBACK_PROFILES.keys())
-    # Download monthly historical prices for all 136 tickers 2000-2026
-    data = yf.download(tickers, start="2000-01-01", end="2026-06-01", interval="1mo", progress=False)
-    close_prices = data["Close"]
+def calculate_rolling_beta(basket_returns, market_returns, window=24):
+    """Calculate rolling beta of a basket relative to market returns."""
+    df = pd.DataFrame({"basket": basket_returns, "market": market_returns}).dropna()
+    if len(df) < window:
+        return pd.Series(index=df.index, dtype=float)
     
-    collapses_start_to_end = {}
-    collapses_start_to_low = {}
-    collapses_peak_to_trough = {}
-    
-    for ticker in tickers:
-        if ticker not in close_prices.columns:
-            continue
-        
-        s = close_prices[ticker].dropna()
-        if s.empty:
-            continue
-            
-        current_mcap = FALLBACK_PROFILES[ticker]
-        current_price = s.iloc[-1]
-        
-        if current_price <= 0:
-            continue
-            
-        shares_outstanding = current_mcap / current_price
-        by_year = s.groupby(s.index.year)
-        
-        for year, y_data in by_year:
-            if year >= 2026 or len(y_data) < 2:
-                continue
-                
-            start_val = y_data.iloc[0]
-            end_val = y_data.iloc[-1]
-            min_val = y_data.min()
-            starting_mcap = start_val * shares_outstanding
-            
-            # Filter condition: Company previously worth at least $50 million
-            if starting_mcap >= 50_000_000:
-                if (end_val - start_val) / start_val <= -0.50:
-                    collapses_start_to_end[year] = collapses_start_to_end.get(year, 0) + 1
-                    
-                if (min_val - start_val) / start_val <= -0.50:
-                    collapses_start_to_low[year] = collapses_start_to_low.get(year, 0) + 1
-                    
-                roll_max = y_data.cummax()
-                drawdown = (y_data - roll_max) / roll_max
-                max_dd = drawdown.min()
-                if max_dd <= -0.50:
-                    collapses_peak_to_trough[year] = collapses_peak_to_trough.get(year, 0) + 1
-
-    years = sorted(list(set(
-        list(collapses_start_to_end.keys()) + 
-        list(collapses_start_to_low.keys()) + 
-        list(collapses_peak_to_trough.keys())
-    )))
-    
-    results = pd.DataFrame(index=years)
-    results["Start_to_End"] = results.index.map(lambda y: collapses_start_to_end.get(y, 0))
-    results["Start_to_Low"] = results.index.map(lambda y: collapses_start_to_low.get(y, 0))
-    results["Peak_to_Trough"] = results.index.map(lambda y: collapses_peak_to_trough.get(y, 0))
-    return results
+    rolling_cov = df["basket"].rolling(window=window).cov(df["market"])
+    rolling_var = df["market"].rolling(window=window).var()
+    return rolling_cov / rolling_var
 
 # -----------------------------------------------------------------------------
 # 2. SIDEBAR PARAMETERS & CONTROLS
@@ -341,8 +249,8 @@ st.sidebar.markdown(
 # 3. DYNAMIC DATA PIPELINE AND PROCESSING
 # -----------------------------------------------------------------------------
 
-# Download data for all selected tickers
-unique_tickers = list(set(final_sm_tickers + final_cb_tickers))
+# Download data for all selected tickers plus S&P 500 benchmark
+unique_tickers = list(set(final_sm_tickers + final_cb_tickers + ["^GSPC"]))
 all_monthly_raw = load_monthly_data(unique_tickers, "1995-01-01", "2026-06-01")
 
 # Clean & align dates, slice by sliders
@@ -383,7 +291,7 @@ else:
 if page == "1. Background & Subsector Showdown":
     st.title("Subsector Performance Showdown & Trajectories")
     st.markdown(
-        f"*Historical Stock Performance of Complex Biologics vs. Small Molecules from **{start_year}** to **{end_year}**. All averages are weighted merely by number of companies in the basket, not by market cap or any other metric. *"
+        f"*Historical Stock Performance of Complex Biologics vs. Small Molecules from **{start_year}** to **{end_year}**. All averages are weighted merely by number of companies in the basket, not by market cap or any other metric. There is also no reweighting mechanic at play here*"
     )
     st.markdown("---")
     
@@ -564,7 +472,7 @@ elif page == "2. Stress-Test Events & Risk":
                 
     # Event 2: Medicare Negotiation (2023)
     with col_e2:
-        st.markdown("### CMS Medicare Drug Price Negotiation (2023)")
+        st.markdown("### Medicare Price Negotiation Announcement (2023)")
         st.markdown(
             "On August 29, 2023, CMS released the list of the first 10 drugs selected for price negotiations under the IRA. "
             "This list focused heavily on highly successful small molecule blockers, leaving complex biologics largely untouched."
@@ -634,51 +542,87 @@ elif page == "2. Stress-Test Events & Risk":
 
     st.markdown("---")
     
-    # Section: Corporate Collapse Risk analysis (Incorporating test_6.py research as requested)
-    st.markdown("### Risk Analysis: Historical Pharma Stock Collapses (2000–2025)")
+    # Section: Rolling Beta (Investor Confidence / Market Risk)
+    st.markdown("### Investor Confidence: Rolling Beta to S&P 500")
     st.markdown(
-        "To evaluate if regulatory and generic headwinds translate to corporate distress, this analysis displays the yearly frequency of "
-        "severe stock price collapses (drawdowns of at least 50% in a single year) across a broader cohort of 136 pharmaceutical and biotech companies. "
-        "This quantifies the structural risk of investing in companies exposed to sudden small-molecule patent and pricing shocks."
+        "Beta measures a subsector's sensitivity to the broader equity market (S&P 500, represented by `^GSPC`). "
+        "A higher beta indicates that the subsector experiences amplified swings, reflecting higher systematic risk "
+        "and shifting investor risk sentiment. A lower or declining beta shows defensive resilience and decoupling "
+        "from broader market panic. This rolling 24-month beta illustrates how investor confidence and systematic "
+        "risk exposure have evolved for both baskets."
     )
     
     try:
-        collapse_df = load_collapse_statistics()
-        
-        # Plot collapses
-        fig_c, ax_c = plt.subplots(figsize=(14, 6), facecolor=BG_BLUE)
-        ax_c.set_facecolor(CARD_BG)
-        
-        ax_c.plot(collapse_df.index, collapse_df["Start_to_End"], color=TEAL, linewidth=2.0, 
-                marker='o', markersize=4, label="Year-End Collapse (Year Return ≤ -50%)")
-        ax_c.plot(collapse_df.index, collapse_df["Start_to_Low"], color=GOLD, linewidth=2.0, 
-                marker='s', markersize=4, label="Start-to-Low Collapse (Max Drawdown vs Jan 1 ≤ -50%)")
-        ax_c.plot(collapse_df.index, collapse_df["Peak_to_Trough"], color=RED, linewidth=2.0, 
-                marker='^', markersize=4, label="Peak-to-Trough Collapse (Max Intra-Year Drawdown ≤ -50%)")
-        
-        # Grid and axes
-        ax_c.grid(axis='y', linestyle='-', alpha=0.2, color=SLATE)
-        ax_c.grid(axis='x', linestyle='--', alpha=0.1, color=SLATE)
-        ax_c.set_axisbelow(True)
-        ax_c.set_xticks(collapse_df.index)
-        ax_c.set_xticklabels(collapse_df.index, rotation=45, color=WHITE, fontsize=8)
-        ax_c.tick_params(axis='y', colors=WHITE, labelsize=9)
-        ax_c.set_xlim(collapse_df.index[0] - 0.5, collapse_df.index[-1] + 0.5)
-        ax_c.set_ylabel("Number of Corporate Collapses", color=WHITE, fontsize=10)
-        ax_c.set_xlabel("Year", color=WHITE, fontsize=10)
-        ax_c.legend(loc='upper left', framealpha=0.9, facecolor=BG_BLUE, edgecolor=CARD_BORDER, labelcolor=WHITE, fontsize=9)
-        
-        # Highlights
-        ax_c.axvspan(2007.8, 2008.2, color='white', alpha=0.08)
-        ax_c.text(2008, ax_c.get_ylim()[1]*0.9, "GFC", color=SLATE, fontsize=8, fontweight="bold", ha="center")
-        ax_c.axvspan(2020.8, 2023.2, color=RED, alpha=0.06)
-        ax_c.text(2022, ax_c.get_ylim()[1]*0.9, "Post-COVID Bear\n& IRA (2021-2023)", color=RED, fontsize=8, fontweight="bold", ha="center")
-        
-        plt.tight_layout()
-        st.pyplot(fig_c, dpi=chart_dpi)
-        plt.close(fig_c)
+        # We need monthly returns of the average baskets and ^GSPC
+        if "^GSPC" in sliced_monthly.columns:
+            # Monthly returns
+            returns_df = sliced_monthly.pct_change()
+            
+            if "Small_Molecules_Avg" in norm_monthly.columns and "Complex_Biologics_Avg" in norm_monthly.columns:
+                sm_ret = norm_monthly["Small_Molecules_Avg"].pct_change()
+                cb_ret = norm_monthly["Complex_Biologics_Avg"].pct_change()
+                mkt_ret = returns_df["^GSPC"]
+                
+                # Calculate rolling 24-month beta
+                beta_sm = calculate_rolling_beta(sm_ret, mkt_ret, window=24)
+                beta_cb = calculate_rolling_beta(cb_ret, mkt_ret, window=24)
+                
+                # Align and plot
+                plot_df = pd.DataFrame({
+                    "Beta_SM": beta_sm,
+                    "Beta_CB": beta_cb
+                }).dropna()
+                
+                if not plot_df.empty:
+                    # Plot Rolling Beta
+                    fig_b, ax_b = plt.subplots(figsize=(14, 6), facecolor=BG_BLUE)
+                    ax_b.set_facecolor(CARD_BG)
+                    
+                    ax_b.plot(plot_df.index, plot_df["Beta_SM"], color=TEAL, linewidth=2.5, label="Small Molecules Beta")
+                    ax_b.plot(plot_df.index, plot_df["Beta_CB"], color=GOLD, linewidth=2.5, label="Complex Biologics Beta")
+                    ax_b.axhline(1.0, color=WHITE, linestyle="--", alpha=0.5, label="Market Beta (1.0)")
+                    
+                    # Style axis
+                    ax_b.grid(axis='y', linestyle='-', alpha=0.2, color=SLATE)
+                    ax_b.grid(axis='x', linestyle='--', alpha=0.1, color=SLATE)
+                    ax_b.set_axisbelow(True)
+                    ax_b.tick_params(colors=WHITE, labelsize=9)
+                    ax_b.set_ylabel("Rolling 24-Month Beta", color=WHITE, fontsize=10)
+                    ax_b.set_xlabel("Date", color=WHITE, fontsize=10)
+                    ax_b.legend(loc="upper left", framealpha=0.9, facecolor=BG_BLUE, edgecolor=CARD_BORDER, labelcolor=WHITE, fontsize=9.5)
+                    ax_b.set_title("Subsector Systematic Risk: Rolling 24-Month Beta to S&P 500", color=WHITE, fontsize=11, fontweight="bold", pad=10)
+                    
+                    # Highlights if they fall within the range
+                    years_in_index = plot_df.index.year
+                    if any(y in years_in_index for y in range(2000, 2006)):
+                        ax_b.axvspan(pd.to_datetime('2000-01-01'), pd.to_datetime('2005-12-31'), color='red', alpha=0.04)
+                        ax_b.text(pd.to_datetime('2002-12-31'), ax_b.get_ylim()[1]*0.9, 'Patent Cliff Era', color=SLATE, fontsize=8, ha='center')
+                    
+                    if any(y in years_in_index for y in range(2022, 2026)):
+                        ax_b.axvspan(pd.to_datetime('2022-07-01'), pd.to_datetime('2025-01-01'), color=RED, alpha=0.06)
+                        ax_b.text(pd.to_datetime('2023-10-01'), ax_b.get_ylim()[1]*0.9, 'IRA Price Caps', color=RED, fontsize=8, ha='center')
+                        
+                    plt.tight_layout()
+                    st.pyplot(fig_b, dpi=chart_dpi)
+                    plt.close(fig_b)
+                    
+                    # Add description of the beta values
+                    st.info(
+                        "**Interpretation of Beta trends:**\n"
+                        "- A **beta > 1.0** indicates that the subsector is more volatile than the S&P 500, showing amplified systematic risk.\n"
+                        "- A **beta < 1.0** indicates defensive characteristics, decoupling the subsector from broader market sell-offs.\n"
+                        "- During macro and legislative shocks, notice how the beta profiles shift: "
+                        "Small Molecules tend to experience beta inflation as policy heat and generic cliffs increase stock volatility, "
+                        "whereas Complex Biologics show lower systematic risk exposure (lower beta) as investors treat them as a robust, policy-shielded safe haven."
+                    )
+                else:
+                    st.warning("Insufficient overlapping data points to plot the rolling 24-month beta.")
+            else:
+                st.warning("Subsector averages not found in normalized data.")
+        else:
+            st.error("Market benchmark index S&P 500 (^GSPC) is missing from the downloaded dataset.")
     except Exception as e:
-        st.error(f"Error loading stock collapse charts: {e}")
+        st.error(f"Error calculating rolling beta: {e}")
 
 # -----------------------------------------------------------------------------
 # 6. VIEW PAGE 3: THESIS VERDICT & CONCLUSION
@@ -824,7 +768,7 @@ elif page == "3. Thesis Verdict & Conclusion":
             )
             
         with col_v2:
-            st.markdown("### Written Investment Recommendation")
+            st.markdown("### Conclusion")
             st.markdown(
                 f"Based on historical and event-driven data over the **{start_year}–{end_year}** window, the thesis "
                 f"asserting that **political price controls inadvertently penalize small-molecule drug developers while "
@@ -841,53 +785,53 @@ elif page == "3. Thesis Verdict & Conclusion":
             
         # 3. Interactive Sensitivity Grid (Dynamic Simulator)
         st.markdown("---")
-        st.markdown("### Interactive Sensitivity Engine")
-        st.markdown(
-            "Test the robustness of this investment thesis across different macro historical cutoffs. "
-            "The table below shows how the key subsector returns, the net alpha spread, and the final thesis support status "
-            "shift depending on the select VIX/macro-period threshold window."
-        )
+        # st.markdown("### Interactive Sensitivity Engine")
+        # st.markdown(
+        #     "Test the robustness of this investment thesis across different macro historical cutoffs. "
+        #     "The table below shows how the key subsector returns, the net alpha spread, and the final thesis support status "
+        #     "shift depending on the select VIX/macro-period threshold window."
+        # )
         
         # Dynamic calculation table for various starting years
-        rows = []
-        test_periods = [
-            (1995, 2026),
-            (2000, 2026),
-            (2005, 2026),
-            (2010, 2026),
-            (2015, 2026),
-            (2020, 2026)
-        ]
+        # rows = []
+        # test_periods = [
+        #     (1995, 2026),
+        #     (2000, 2026),
+        #     (2005, 2026),
+        #     (2010, 2026),
+        #     (2015, 2026),
+        #     (2020, 2026)
+        # ]
         
-        for sy, ey in test_periods:
-            if not all_monthly_raw.empty:
-                sub_slice = all_monthly_raw.loc[f"{sy}-01-01":f"{ey}-12-31"]
-                sub_v_sm = [t for t in final_sm_tickers if t in sub_slice.columns and not sub_slice[t].dropna().empty]
-                sub_v_cb = [t for t in final_cb_tickers if t in sub_slice.columns and not sub_slice[t].dropna().empty]
+        # for sy, ey in test_periods:
+        #     if not all_monthly_raw.empty:
+        #         sub_slice = all_monthly_raw.loc[f"{sy}-01-01":f"{ey}-12-31"]
+        #         sub_v_sm = [t for t in final_sm_tickers if t in sub_slice.columns and not sub_slice[t].dropna().empty]
+        #         sub_v_cb = [t for t in final_cb_tickers if t in sub_slice.columns and not sub_slice[t].dropna().empty]
                 
-                if sub_v_sm and sub_v_cb:
-                    # Normalize first row
-                    sub_norm = sub_slice.copy()
-                    for col in sub_norm.columns:
-                        fv = sub_norm[col].dropna()
-                        if not fv.empty:
-                            sub_norm[col] = (sub_norm[col] / fv.iloc[0]) * 100
+        #         if sub_v_sm and sub_v_cb:
+        #             # Normalize first row
+        #             sub_norm = sub_slice.copy()
+        #             for col in sub_norm.columns:
+        #                 fv = sub_norm[col].dropna()
+        #                 if not fv.empty:
+        #                     sub_norm[col] = (sub_norm[col] / fv.iloc[0]) * 100
                             
-                    sm_avg_end = sub_norm[sub_v_sm].mean(axis=1).dropna().iloc[-1]
-                    cb_avg_end = sub_norm[sub_v_cb].mean(axis=1).dropna().iloc[-1]
+        #             sm_avg_end = sub_norm[sub_v_sm].mean(axis=1).dropna().iloc[-1]
+        #             cb_avg_end = sub_norm[sub_v_cb].mean(axis=1).dropna().iloc[-1]
                     
-                    sm_ret = sm_avg_end - 100
-                    cb_ret = cb_avg_end - 100
-                    delta = cb_ret - sm_ret
+        #             sm_ret = sm_avg_end - 100
+        #             cb_ret = cb_avg_end - 100
+        #             delta = cb_ret - sm_ret
                     
-                    rows.append({
-                        "Start Year": sy,
-                        "End Year": ey,
-                        "SM Basket Return": f"{sm_ret:+.1f}%",
-                        "CB Basket Return": f"{cb_ret:+.1f}%",
-                        "Net Alpha Spread": f"{delta:+.1f}%",
-                        "Thesis Verdict": "Supported" if delta > 0 else "Not Supported"
-                    })
+        #             rows.append({
+        #                 "Start Year": sy,
+        #                 "End Year": ey,
+        #                 "SM Basket Return": f"{sm_ret:+.1f}%",
+        #                 "CB Basket Return": f"{cb_ret:+.1f}%",
+        #                 "Net Alpha Spread": f"{delta:+.1f}%",
+        #                 "Thesis Verdict": "Supported" if delta > 0 else "Not Supported"
+        #             })
                     
-        sens_df = pd.DataFrame(rows)
-        st.dataframe(sens_df, use_container_width=True, hide_index=True)
+        # sens_df = pd.DataFrame(rows)
+        # st.dataframe(sens_df, use_container_width=True, hide_index=True)

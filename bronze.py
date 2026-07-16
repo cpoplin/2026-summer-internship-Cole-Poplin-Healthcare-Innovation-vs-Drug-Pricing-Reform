@@ -704,7 +704,9 @@ def patent_cliff_event():
 
 def main():
     # Load subsector baskets
+    #Small Molecules - Bristol Myers Squibb (BMY), Pfizer (PFE), AbbVie (ABBV)
     small_molecule_tickers = ["BMY", "PFE", "ABBV"]
+    #Complex Biologics - Amgen (AMGN), Regeneron (REGN), Novo Nordisk (NVO)
     complex_biologics_tickers = ["AMGN", "REGN", "NVO"]
     all_tickers = small_molecule_tickers + complex_biologics_tickers
     
@@ -775,6 +777,3 @@ if __name__ == "__main__":
 # fig2.autofmt_xdate()
 
 # plt.show()
-
-
-

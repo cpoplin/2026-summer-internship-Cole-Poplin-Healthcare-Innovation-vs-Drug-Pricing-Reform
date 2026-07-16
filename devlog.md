@@ -13,9 +13,10 @@
 
 # Silver tier
 - After all of my data was set up, I had to decide what platform I was going to use for my UI, given that it was a data project already in Python, and did not have strict performance requirements, streamlit was the natural choice. So, I created an interactive streamlit ui for the project, which in large part consisted of prompting an AI with my vision of a UI and how it should showcase the data I already had, down to the 3 pages and what each should show. Though I also spent some time refining its output to be more in line with my vision.
+- Replaced the complex corporate collapses risk analysis section on page 2 with a dynamic rolling 24-month beta to the S&P 500 benchmark (^GSPC). This provides a cleaner and much faster investor confidence metric, eliminating the need to download yfinance histories for 136 tickers.
 
 # Gold tier
-- tbd
+- I initially thought I could do a simple version of the sort of in depth analysis provided by a paid API and extract operating profit vs rnd costs by sector just from SEC filings being processed by an LLM, but since the companies don't break down rnd costs at all, that solution isn't enough, though their SEC documents do provide a good breakdown of revenue.  I am currently working on making a function to create an estimated breakdown based on standard cost rates of clinical trials, because those, and which drug they are studying, are public (via AACT database), so while that won't give exact data, it should be able to give a solid estimation of how much rnd is being allocated to each drug type, allowing me to give an educated guess on the breakdown of rnd and revenue, and compare these over the years.
 
 # Miscellaneous
 - Minor details were edited all throughout as my vision for the project evolved.
