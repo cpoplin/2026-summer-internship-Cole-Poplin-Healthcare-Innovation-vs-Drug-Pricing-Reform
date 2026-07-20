@@ -27,6 +27,8 @@ port=os.getenv("PGPORT")
 dbname=os.getenv("PGDATABASE")
 engine = create_engine(f"postgresql://{user}:{safe_password}@{host}:{port}/{dbname}")
 
+
+
 def revenue_breakdown_and_rnd(company_name,year):
     print("Gathering 10-K data...")
     #Fetch 10-K for AAPL
@@ -54,10 +56,15 @@ def revenue_breakdown_and_rnd(company_name,year):
     )
 
     #extract the desired data
+    import re
     response_str = response.text
-    small_molecule = int(response_str.split("Small molecule revenue:")[1].split(";")[0])
-    large_molecule = int(response_str.split("Large molecule revenue:")[1].split(";")[0])
-    rnd_spend = int(response_str.split("RND spend:")[1].split(";")[0])
+    raw_small = response_str.split("Small molecule revenue:")[1].split(";")[0]
+    raw_large = response_str.split("Large molecule revenue:")[1].split(";")[0]
+    raw_rnd = response_str.split("RND spend:")[1].split(";")[0]
+
+    small_molecule = int(re.sub(r"[^\d]", "", raw_small)) if re.sub(r"[^\d]", "", raw_small) else 0
+    large_molecule = int(re.sub(r"[^\d]", "", raw_large)) if re.sub(r"[^\d]", "", raw_large) else 0
+    rnd_spend = int(re.sub(r"[^\d]", "", raw_rnd)) if re.sub(r"[^\d]", "", raw_rnd) else 0
     print("Raw Output:")
     print(response_str)
     print("Small Molecule Revenue: $")
@@ -83,17 +90,39 @@ def query_and_return_total_patient_months_for_each_sector(company_name, year):
         }
         result = conn.execute(text(q.text), variables)
         df = pd.DataFrame(result.fetchall(), columns=result.keys())
-        print(df)
 
         # Convert patient_months_given_year to numeric for summation
         df['patient_months_given_year'] = pd.to_numeric(df['patient_months_given_year'], errors='coerce').fillna(0)
 
+        # Classify each row as DRUG (small molecule) or BIOLOGICAL (large molecule / other) using batch ChEMBL API lookups
+        unique_drugs = [d for d in df['drug_name'].dropna().unique() if isinstance(d, str)]
+        type_map = util.get_molecule_types_batch(unique_drugs)
+
+        def get_final_class(drug_name):
+            mol_type = type_map.get(drug_name, "Drug not found in ChEMBL")
+            if mol_type == "Small Molecule":
+                return "DRUG"
+            else:
+                return "BIOLOGICAL"
+
+        drug_class_map = {drug: get_final_class(drug) for drug in unique_drugs}
+        df['intervention_type'] = df['drug_name'].map(drug_class_map).fillna(df['intervention_type'])
+
+        print("\n--- Reclassified DataFrame (DRUG = Small Molecule, BIOLOGICAL = Large Molecule) ---")
+        print(df)
+
         # Compute totals for BIOLOGICAL and DRUG
         large_molecule_total = df[df['intervention_type'] == 'BIOLOGICAL']['patient_months_given_year'].sum()
         small_molecule_total = df[df['intervention_type'] == 'DRUG']['patient_months_given_year'].sum()
+        total_patient_months = large_molecule_total + small_molecule_total
 
         print(f"\nTotal Patient Months for Large Molecule: {large_molecule_total}")
         print(f"Total Patient Months for Small Molecule: {small_molecule_total}")
-
-revenue_breakdown_and_rnd("abbvie", 2025)
+        print(f"Estimated percent of RND spent on small molecules: {small_molecule_total / total_patient_months * 100}%")
+        print(f"Estimated percent of RND spent on large molecules: {large_molecule_total / total_patient_months * 100}%")
+        
+#something is wrong with the patient months calc I imagine, either that or pfizer
+#is like the only one that properly lists DRUG vs BIOLOGIC
+revenue_breakdown_and_rnd("eli lilly", 2020)
+query_and_return_total_patient_months_for_each_sector("eli lilly", 2020)
 
