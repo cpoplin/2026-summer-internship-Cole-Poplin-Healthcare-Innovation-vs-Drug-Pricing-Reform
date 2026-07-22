@@ -19,6 +19,7 @@ healthcare-thesis-01/
 │
 ├── bronze.py              ← Run: python bronze.py (data aggregation & plotting)
 ├── silver.py              ← Run: streamlit run silver.py (interactive dashboard UI)
+├── gold_graph_drawing.py  ← Run: python gold_graph_drawing.py (note the seperate dependency list for this)
 ├── README.md              ← Project documentation
 ├── devlog.md              ← Development log
 │
@@ -34,11 +35,29 @@ healthcare-thesis-01/
 
 ## Quick Start
 
-### Install dependencies
+### Install dependencies (bronze and silver tiers)
 ```bash
 pip install pandas matplotlib yfinance numpy streamlit
 ```
-
+### Gold Tier Dependencies
+```bash
+pip install pandas matplotlib numpy sqlalchemy edgar-tools google-genai python-dotenv requests
+```
+- Database: https://aact.ctti-clinicaltrials.org/downloads
+    - follow instructions on this site
+    - I can only guarantee the functionality of the sql query used in this project on Postgres, some of the 
+    functionality used would likely have to be reworked to equivalents if you wish to run it will another 
+    sql database
+    - Expect the setup to take a long time, it took close to an hour on my machine
+- Necessary Environment Variables
+    - GEMINI_API_KEY : api key for llm text analysis, can be acquired for free at https://ai.google.dev/gemini-api/docs/api-key, the project should not hit rate limits of the free version, use a paid key at your own risk
+    - EMAIL : SEC api expects you to provide an email for request identification
+    - NAME : SEC api expects you to provide a name for identification
+    - PGHOST : postgresql database host, 127.0.0.1 for local
+    - PGPORT : postgresql database port, default is 5432
+    - PGDATABASE : postgresql database name
+    - PGUSER : postgresql database username
+    - PGPASSWORD : postgresql database password
 ### Run Bronze tier (Data & Charts)
 ```bash
 python bronze.py
@@ -50,6 +69,15 @@ python bronze.py
 streamlit run silver.py
 ```
 **Outputs:** Launches a local web server at `http://localhost:8501/` with a multi-page interactive dashboard.
+
+### Run Gold Tier
+```
+python gold_graph_drawing.py
+```
+**Outputs:** Runs the gold tier which will fetch and transform data from both the downloaded database and the SEC api, producing two charts in the gold_charts directory, showcasing the exodus of rnd money from small molecule drugs over the last 2 decades, suggesting lack of confidence in their future profitability
+
+- By default this script will utilize data cached in gold_csvs due to the time it takes to properly fetch and transform all the data, as the script is performing extensive transformations on at least dozens of MB of data, if you wish to force a refresh of all data, simply delete the files within the gold_csvs folder, but expect a runtime north of 10 minutes
+
 
 ---
 
