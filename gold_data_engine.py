@@ -7,7 +7,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 import urllib.parse
 import query_import as q
-import util
+import gold_util as util
 load_dotenv()
 
 # Set SEC User agent identity
